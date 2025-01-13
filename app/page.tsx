@@ -15,7 +15,7 @@ import {
   X,
   Trophy,
   Medal,
-  Skull,
+  Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,7 @@ interface Player {
   id: number;
   name: string;
   color: string;
-  time: number;
+  time: number; // almacena el tiempo en milisegundos
 }
 
 const COLORS = [
@@ -38,17 +38,16 @@ const COLORS = [
 ];
 
 export default function Home() {
-  // ----------------------
-  //   ESTADOS PRINCIPALES
-  // ----------------------
   const [players, setPlayers] = useState<Player[]>([
     { id: 1, name: "Player 1", color: "bg-rose-500", time: 0 },
     { id: 2, name: "Player 2", color: "bg-blue-500", time: 0 },
     { id: 3, name: "Player 3", color: "bg-emerald-500", time: 0 },
     { id: 4, name: "Player 4", color: "bg-amber-500", time: 0 },
   ]);
-  const [currentPlayer, setCurrentPlayer] = useState<number>(0);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+
+  // índice del jugador que está corriendo el tiempo
+  const [currentPlayer, setCurrentPlayer] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
 
   // Edición de nombre y color
   const [editingPlayer, setEditingPlayer] = useState<number | null>(null);
@@ -57,47 +56,53 @@ export default function Home() {
   // Hint inicial de edición
   const [showEditHint, setShowEditHint] = useState(true);
 
-  // Orden de clasificación
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  // Por defecto, “asc” = Fastest es el menor tiempo
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // Modales de confirmación
+  // Modales
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [playerToDeleteId, setPlayerToDeleteId] = useState<number | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Timer general de la partida
-  const [globalTime, setGlobalTime] = useState<number>(0);
+  // Timer global
+  const [globalTime, setGlobalTime] = useState(0);
 
+  // ----------------------
+  //    useEffect principal
+  // ----------------------
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning) {
       interval = setInterval(() => {
-        setPlayers((prevPlayers) =>
-          prevPlayers.map((player, idx) =>
-            idx === currentPlayer
-              ? { ...player, time: player.time + 10 }
-              : player
+        setPlayers((prev) =>
+          prev.map((p, idx) =>
+            idx === currentPlayer ? { ...p, time: p.time + 10 } : p
           )
         );
-        setGlobalTime((prevGlobal) => prevGlobal + 10);
+        setGlobalTime((prevTime) => prevTime + 10);
       }, 10);
     }
     return () => clearInterval(interval);
   }, [isRunning, currentPlayer]);
 
+  // Ocultar hint si entro a editar un nombre
   useEffect(() => {
     if (editingPlayer !== null) {
       setShowEditHint(false);
     }
   }, [editingPlayer]);
 
+  // ----------------------
+  //    Funciones Aux
+  // ----------------------
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
-    const milliseconds = Math.floor((ms % 1000) / 10);
-    return `${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}:${milliseconds.toString().padStart(2, "0")}`;
+    const milliseconds = ms % 1000;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+      2,
+      "0"
+    )}:${String(milliseconds).padStart(3, "0")}`;
   };
 
   const nextPlayer = () => {
@@ -112,23 +117,19 @@ export default function Home() {
     setIsRunning(!isRunning);
   };
 
-  // Abre modal de confirmación para reset
+  // ----------------------
+  //   RESET DE TIMERS
+  // ----------------------
   const handleResetConfirmation = () => {
     setShowResetConfirm(true);
   };
-
-  // Confirma el reset
   const confirmReset = () => {
     resetTimers();
     setShowResetConfirm(false);
   };
-
-  // Cancela el reset
   const cancelReset = () => {
     setShowResetConfirm(false);
   };
-
-  // Hace reset de todos los tiempos y del timer global
   const resetTimers = () => {
     setIsRunning(false);
     setPlayers((prev) => prev.map((p) => ({ ...p, time: 0 })));
@@ -137,34 +138,29 @@ export default function Home() {
   };
 
   // ----------------------
-  // MANEJO DE NOMBRES
+  //  Manejo de Nombres
   // ----------------------
   const handleNameChange = (id: number, newName: string) => {
-    setPlayers((prevPlayers) =>
-      prevPlayers.map((player) =>
-        player.id === id ? { ...player, name: newName } : player
-      )
+    setPlayers((prev) =>
+      prev.map((pl) => (pl.id === id ? { ...pl, name: newName } : pl))
     );
   };
-
   const handleNameBlur = () => {
     setEditingPlayer(null);
   };
 
   // ----------------------
-  //   MANEJO DE COLORES
+  //  Manejo de Colores
   // ----------------------
   const handleColorChange = (playerId: number, newColor: string) => {
-    setPlayers((prevPlayers) =>
-      prevPlayers.map((player) =>
-        player.id === playerId ? { ...player, color: newColor } : player
-      )
+    setPlayers((prev) =>
+      prev.map((pl) => (pl.id === playerId ? { ...pl, color: newColor } : pl))
     );
     setEditingColor(null);
   };
 
   // ----------------------
-  //   MANEJO DE PLAYERS
+  //  Manejo de Players
   // ----------------------
   const addNewPlayer = () => {
     const newId = Math.max(...players.map((p) => p.id)) + 1;
@@ -177,51 +173,74 @@ export default function Home() {
 
   const deletePlayer = (id: number) => {
     if (players.length <= 2) return;
-    const updatedPlayers = players.filter((player) => player.id !== id);
-    setPlayers(updatedPlayers);
-    if (currentPlayer >= updatedPlayers.length) {
-      setCurrentPlayer(updatedPlayers.length - 1);
+    const updated = players.filter((pl) => pl.id !== id);
+    setPlayers(updated);
+    if (currentPlayer >= updated.length) {
+      setCurrentPlayer(updated.length - 1);
     }
     setPlayerToDeleteId(null);
     setShowDeleteConfirm(false);
   };
 
   // ----------------------
-  //  ORDENAMIENTO
+  //  Player Performance
   // ----------------------
-  const sortedPlayers = [...players].sort((a, b) =>
-    sortOrder === "asc" ? a.time - b.time : b.time - a.time
-  );
-  const topPlayer = sortedPlayers[0];
-  const secondPlayer = sortedPlayers[1];
-  const slowestPlayer = sortedPlayers[sortedPlayers.length - 1];
+  // stable sort asc
+  const sortedAsc = [...players].sort((a, b) => {
+    if (a.time !== b.time) {
+      return a.time - b.time; // menor tiempo primero
+    }
+    return a.id - b.id; // desempate por id
+  });
 
-  const currentPlayerColor =
-    players[currentPlayer] && players[currentPlayer].color
-      ? players[currentPlayer].color
-      : "bg-gray-700";
+  // stable sort desc
+  const sortedDesc = [...players].sort((a, b) => {
+    if (a.time !== b.time) {
+      return b.time - a.time; // mayor tiempo primero
+    }
+    return b.id - a.id; // desempate por id
+  });
+
+  let topPlayer, secondPlayer, slowestPlayer;
+  if (sortOrder === "asc") {
+    // Fastest => menor
+    topPlayer = sortedAsc[0];
+    // Runner Up => segundo menor
+    secondPlayer = sortedAsc[1];
+    // Needs Practice => mayor
+    slowestPlayer = sortedAsc[sortedAsc.length - 1];
+  } else {
+    // Fastest => mayor
+    topPlayer = sortedDesc[0];
+    // Runner Up => 2do mayor
+    secondPlayer = sortedDesc[1];
+    // Needs Practice => menor
+    slowestPlayer = sortedDesc[sortedDesc.length - 1];
+  }
+
+  // color del actual
+  const currentPlayerColor = players[currentPlayer]?.color ?? "bg-gray-700";
 
   // ----------------------
-  //       RENDER
+  //       Render
   // ----------------------
   return (
-    // Quitar overflow-hidden o cambiar a overflow-visible
     <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-8 relative overflow-visible">
-      {/* Fondo con círculos de colores */}
+      {/* Fondo de círculos */}
       <div className="absolute inset-0 overflow-hidden">
-        {players.map((player, index) => (
+        {players.map((pl, i) => (
           <div
-            key={`bg-${player.id}`}
+            key={`bg-${pl.id}`}
             className={cn(
               "absolute w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] rounded-full blur-3xl opacity-20 transition-all duration-1000",
-              player.color,
-              index === currentPlayer ? "scale-125" : "scale-100"
+              pl.color,
+              i === currentPlayer ? "scale-125" : "scale-100"
             )}
             style={{
-              left: `${(index * 30) % 100}%`,
-              top: `${(index * 40) % 100}%`,
+              left: `${(i * 30) % 100}%`,
+              top: `${(i * 40) % 100}%`,
               transform: `translate(-50%, -50%) scale(${
-                index === currentPlayer ? 1.25 : 1
+                i === currentPlayer ? 1.25 : 1
               })`,
             }}
           />
@@ -230,16 +249,12 @@ export default function Home() {
 
       {/* Contenido principal */}
       <div className="max-w-4xl mx-auto relative z-10">
-        {/* Controles de Play/Stop/Next/Prev/Reset */}
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">Player Timer</h1>
-
-          {/* Timer general de la partida */}
           <div className="text-gray-300 mb-4">
             <span className="text-base">Global Time: </span>
             <span className="font-mono text-xl">{formatTime(globalTime)}</span>
           </div>
-
           <div className="flex justify-center gap-2 sm:gap-4 mb-8">
             <button
               onClick={previousPlayer}
@@ -272,7 +287,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Hint para edición de nombres */}
+        {/* Hint */}
         {showEditHint && (
           <div className="text-center mb-4 text-gray-400 animate-pulse">
             <p>💡 Tip: Click on player names to edit them</p>
@@ -281,11 +296,15 @@ export default function Home() {
 
         {/* Player Performance */}
         <div className="mb-8">
-          {/* Encabezado y botón de orden */}
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">Player Performance</h2>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Trophy size={24} className="text-yellow-400" />
+              Player Performance
+            </h2>
             <button
-              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              onClick={() =>
+                setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+              }
               className="p-2 rounded-full hover:bg-gray-700 transition-colors"
               aria-label="Toggle Sort Order"
             >
@@ -297,80 +316,77 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Contenedor que toma el color del jugador actual (o fallback) */}
-          <div
-            className={cn(
-              "rounded-xl shadow-lg relative overflow-hidden p-6 flex flex-col gap-4 transition-colors",
-              currentPlayerColor,
-              "bg-opacity-50"
-            )}
-          >
-            <div className="flex items-center justify-around gap-8">
-              {/* Top Player */}
-              <div className="flex flex-col items-center">
-                <Trophy size={36} className="text-yellow-400" />
-                <p className="text-xl font-semibold mt-2">
-                  {topPlayer?.name || "—"}
-                </p>
-                <p className="font-mono text-lg">
-                  {topPlayer ? formatTime(topPlayer.time) : "--:--:--"}
-                </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              {
+                position: sortOrder === "asc" ? "Fastest" : "Fastest (Highest)",
+                player: topPlayer,
+                icon: <Trophy size={36} className="text-yellow-400" />,
+                gradient: "from-yellow-500/20 to-transparent",
+              },
+              {
+                position: "Runner Up",
+                player: secondPlayer,
+                icon: <Medal size={36} className="text-gray-200" />,
+                gradient: "from-gray-500/20 to-transparent",
+              },
+              {
+                position:
+                  sortOrder === "asc"
+                    ? "Needs Practice"
+                    : "Needs Practice (Lowest)",
+                player: slowestPlayer,
+                icon: <Timer size={36} className="text-red-400" />,
+                gradient: "from-red-500/20 to-transparent",
+              },
+            ].map((item) => (
+              <div
+                key={item.position}
+                className={cn(
+                  "relative rounded-xl p-6 backdrop-blur-sm bg-gradient-to-b",
+                  item.gradient,
+                  "border border-white/10 group hover:border-white/20 transition-all"
+                )}
+              >
+                <div className="absolute top-0 right-0 p-4">{item.icon}</div>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-400">{item.position}</p>
+                  <h3 className="text-xl font-bold truncate">
+                    {item.player?.name || "—"}
+                  </h3>
+                  <p className="font-mono text-2xl">
+                    {item.player ? formatTime(item.player.time) : "--:--:---"}
+                  </p>
+                </div>
               </div>
-
-              {/* Second Player */}
-              <div className="flex flex-col items-center">
-                <Medal size={36} className="text-gray-200" />
-                <p className="text-xl font-semibold mt-2">
-                  {secondPlayer?.name || "—"}
-                </p>
-                <p className="font-mono text-lg">
-                  {secondPlayer ? formatTime(secondPlayer.time) : "--:--:--"}
-                </p>
-              </div>
-
-              {/* Slowest Player */}
-              <div className="flex flex-col items-center">
-                <Skull size={36} className="text-red-500" />
-                <p className="text-xl font-semibold mt-2">
-                  {slowestPlayer?.name || "—"}
-                </p>
-                <p className="font-mono text-lg">
-                  {slowestPlayer ? formatTime(slowestPlayer.time) : "--:--:--"}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Lista de jugadores + botón para agregar */}
+        {/* Lista de jugadores */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          {players.map((player, index) => (
+          {players.map((pl, i) => (
             <div
-              key={player.id}
-              // Se quita hover:scale-105 para evitar stacking context
+              key={pl.id}
               className={cn(
-                "relative p-4 sm:p-6 rounded-xl transition-all cursor-pointer backdrop-blur-lg bg-opacity-50 overflow-visible",
-                player.color,
-                index === currentPlayer ? "ring-4 ring-white" : "opacity-80"
+                "relative p-4 sm:p-6 rounded-xl transition-all cursor-pointer backdrop-blur-lg bg-opacity-50",
+                "border border-white/10 shadow-xl hover:shadow-2xl hover:-translate-y-1",
+                pl.color,
+                i === currentPlayer ? "ring-4 ring-white" : "opacity-80"
               )}
-              onClick={() => setCurrentPlayer(index)}
+              onClick={() => setCurrentPlayer(i)}
             >
-              {/* Encabezado: Nombre (editable) + Botones (cambiar color y borrar) */}
+              {/* Nombre editable + botones color y borrar */}
               <div className="flex justify-between items-start mb-2">
-                {/* Edición de nombre */}
                 <div className="flex-1 flex items-center gap-2">
-                  {editingPlayer === player.id ? (
+                  {editingPlayer === pl.id ? (
                     <input
                       type="text"
-                      value={player.name}
-                      onChange={(e) =>
-                        handleNameChange(player.id, e.target.value)
-                      }
+                      value={pl.name}
+                      onChange={(e) => handleNameChange(pl.id, e.target.value)}
                       onBlur={handleNameBlur}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleNameBlur();
-                        }
+                        if (e.key === "Enter") handleNameBlur();
                       }}
                       className="bg-transparent text-white text-xl font-bold border-b border-white outline-none flex-1"
                       autoFocus
@@ -380,10 +396,10 @@ export default function Home() {
                       className="text-xl font-bold cursor-text flex-1 flex items-center gap-2 group"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setEditingPlayer(player.id);
+                        setEditingPlayer(pl.id);
                       }}
                     >
-                      {player.name}
+                      {pl.name}
                       <Edit2
                         size={16}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -392,57 +408,23 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Botones de color y borrado */}
                 <div className="flex gap-2 items-center">
-                  {/* Cambiar color */}
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingColor(
-                          editingColor === player.id ? null : player.id
-                        );
-                      }}
-                      className="color-button p-1 hover:bg-white/20 rounded-full transition-colors"
-                      aria-label="Change Color"
-                      style={{ zIndex: 50 }}
-                    >
-                      <Palette size={20} />
-                    </button>
-                    {editingColor === player.id && (
-                      // Ajustamos el ancho a min-w para que sea responsivo
-                      <div
-                        className="color-picker absolute top-full left-0 mt-2 bg-gray-800 p-2 rounded-lg shadow-xl grid grid-cols-4 gap-2 z-50 border border-gray-700 min-w-[10rem] w-full sm:w-auto"
-                        style={{ zIndex: 9999 }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {COLORS.map((color) => (
-                          <button
-                            key={color}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleColorChange(player.id, color);
-                            }}
-                            className={cn(
-                              "w-6 h-6 rounded-full transition-transform hover:scale-110",
-                              color,
-                              player.color === color && "ring-2 ring-white"
-                            )}
-                            aria-label={`Select ${color
-                              .replace("bg-", "")
-                              .replace("-500", "")} color`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingColor(editingColor === pl.id ? null : pl.id);
+                    }}
+                    className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                    aria-label="Change Color"
+                  >
+                    <Palette size={20} />
+                  </button>
 
-                  {/* Borrar jugador (si hay más de 2) */}
                   {players.length > 2 && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPlayerToDeleteId(player.id);
+                        setPlayerToDeleteId(pl.id);
                         setShowDeleteConfirm(true);
                       }}
                       className="p-1 rounded-full bg-white text-black hover:bg-gray-300 transition-colors"
@@ -454,14 +436,12 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Tiempo del jugador */}
-              <div className="text-2xl sm:text-3xl font-mono text-center">
-                {formatTime(player.time)}
+              <div className="text-2xl sm:text-3xl font-mono text-center mt-4">
+                {formatTime(pl.time)}
               </div>
             </div>
           ))}
 
-          {/* Botón para agregar un nuevo jugador */}
           <button
             onClick={addNewPlayer}
             className="p-4 sm:p-6 rounded-xl border-2 border-dashed border-gray-600 flex items-center justify-center hover:border-gray-400 transition-colors cursor-pointer h-[100px] sm:h-[120px]"
@@ -474,7 +454,6 @@ export default function Home() {
 
       {/* MODALES */}
 
-      {/* Modal de confirmación para borrar jugador */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-80">
           <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full shadow-xl relative">
@@ -519,7 +498,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Modal de confirmación para resetear los timers */}
       {showResetConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-80">
           <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full shadow-xl relative">
@@ -551,6 +529,50 @@ export default function Home() {
             >
               <X size={20} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {editingColor !== null && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[100] bg-gray-900/80 backdrop-blur-sm"
+          onClick={() => setEditingColor(null)}
+        >
+          <div
+            className="bg-gray-800 rounded-xl p-6 w-[90%] max-w-sm mx-auto shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Choose Color</h3>
+              <button
+                onClick={() => setEditingColor(null)}
+                className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-6 p-4">
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => {
+                    if (editingColor !== null) {
+                      handleColorChange(editingColor, color);
+                    }
+                  }}
+                  className={cn(
+                    "w-12 h-12 rounded-full transition-all hover:scale-110 ring-offset-2 ring-offset-gray-800",
+                    color,
+                    players.find((p) => p.id === editingColor)?.color === color
+                      ? "ring-2 ring-white scale-110"
+                      : ""
+                  )}
+                  aria-label={`Select ${color
+                    .replace("bg-", "")
+                    .replace("-500", "")} color`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
