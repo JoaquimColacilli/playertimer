@@ -241,9 +241,28 @@ export default function Home() {
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">Player Timer</h1>
-          <div className="text-gray-300 mb-4">
+          <div className="text-gray-300 mb-2">
             <span className="text-base">Global Time: </span>
             <span className="font-mono text-xl">{formatTime(globalTime)}</span>
+          </div>
+          <div className="text-gray-400 text-sm flex items-center justify-center space-x-2  mb-4">
+            <span>by</span>
+            <a
+              href="https://github.com/JoaquimColacilli"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 font-semibold hover:underline flex items-center"
+            >
+              Joaquim Colacilli
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 ml-1"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.173c-3.338.725-4.042-1.415-4.042-1.415-.546-1.386-1.333-1.755-1.333-1.755-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.997.108-.775.418-1.305.76-1.605-2.665-.303-5.466-1.335-5.466-5.93 0-1.31.468-2.38 1.236-3.22-.124-.303-.536-1.524.116-3.176 0 0 1.008-.323 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.29-1.553 3.297-1.23 3.297-1.23.654 1.653.242 2.874.118 3.176.77.84 1.234 1.91 1.234 3.22 0 4.61-2.805 5.625-5.475 5.92.43.37.823 1.096.823 2.21v3.285c0 .32.217.694.824.576C20.565 21.795 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+              </svg>
+            </a>
           </div>
           <div className="flex justify-center gap-2 sm:gap-4 mb-8">
             <button
