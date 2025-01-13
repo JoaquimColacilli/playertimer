@@ -186,35 +186,25 @@ export default function Home() {
   //  Player Performance
   // ----------------------
   // stable sort asc
-  const sortedAsc = [...players].sort((a, b) => {
-    if (a.time !== b.time) {
-      return a.time - b.time; // menor tiempo primero
-    }
-    return a.id - b.id; // desempate por id
-  });
+  const sortedAsc = [...players].sort((a, b) => a.time - b.time);
 
   // stable sort desc
-  const sortedDesc = [...players].sort((a, b) => {
-    if (a.time !== b.time) {
-      return b.time - a.time; // mayor tiempo primero
-    }
-    return b.id - a.id; // desempate por id
-  });
+  const sortedDesc = [...players].sort((a, b) => b.time - a.time);
 
+  // Assign players based on sort order
   let topPlayer, secondPlayer, slowestPlayer;
   if (sortOrder === "asc") {
-    // Fastest => menor
-    topPlayer = sortedAsc[0];
-    // Runner Up => segundo menor
-    secondPlayer = sortedAsc[1];
-    // Needs Practice => mayor
-    slowestPlayer = sortedAsc[sortedAsc.length - 1];
-  } else {
-    // Fastest => mayor
+    slowestPlayer = sortedAsc[sortedAsc.length - 1]; // Más lento (Highest time)
+    topPlayer = sortedAsc[0]; // Más rápido (Lowest time)
+
+    // Runner Up: Segundo más lento
+    secondPlayer = sortedAsc[sortedAsc.length - 2];
+  } else if (sortOrder === "desc") {
+    // Fastest is the player with the most time
     topPlayer = sortedDesc[0];
-    // Runner Up => 2do mayor
+    // Runner Up is the next player with the most time
     secondPlayer = sortedDesc[1];
-    // Needs Practice => menor
+    // Needs Practice is the player with the least time
     slowestPlayer = sortedDesc[sortedDesc.length - 1];
   }
 
@@ -362,7 +352,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-
         {/* Lista de jugadores */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {players.map((pl, i) => (
