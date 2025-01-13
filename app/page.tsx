@@ -16,6 +16,8 @@ import {
   Trophy,
   Medal,
   Timer,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +25,7 @@ interface Player {
   id: number;
   name: string;
   color: string;
-  time: number; // almacena el tiempo en milisegundos
+  time: number; // stores time in milliseconds
 }
 
 const COLORS = [
@@ -45,31 +47,24 @@ export default function Home() {
     { id: 4, name: "Player 4", color: "bg-amber-500", time: 0 },
   ]);
 
-  // índice del jugador que está corriendo el tiempo
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
-  // Edición de nombre y color
   const [editingPlayer, setEditingPlayer] = useState<number | null>(null);
   const [editingColor, setEditingColor] = useState<number | null>(null);
 
-  // Hint inicial de edición
   const [showEditHint, setShowEditHint] = useState(true);
 
-  // Por defecto, “asc” = Fastest es el menor tiempo
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // Modales
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [playerToDeleteId, setPlayerToDeleteId] = useState<number | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Timer global
   const [globalTime, setGlobalTime] = useState(0);
 
-  // ----------------------
-  //    useEffect principal
-  // ----------------------
+  const [isPlayerPerformanceOpen, setIsPlayerPerformanceOpen] = useState(false);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning) {
@@ -85,16 +80,12 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isRunning, currentPlayer]);
 
-  // Ocultar hint si entro a editar un nombre
   useEffect(() => {
     if (editingPlayer !== null) {
       setShowEditHint(false);
     }
   }, [editingPlayer]);
 
-  // ----------------------
-  //    Funciones Aux
-  // ----------------------
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
@@ -117,19 +108,19 @@ export default function Home() {
     setIsRunning(!isRunning);
   };
 
-  // ----------------------
-  //   RESET DE TIMERS
-  // ----------------------
   const handleResetConfirmation = () => {
     setShowResetConfirm(true);
   };
+
   const confirmReset = () => {
     resetTimers();
     setShowResetConfirm(false);
   };
+
   const cancelReset = () => {
     setShowResetConfirm(false);
   };
+
   const resetTimers = () => {
     setIsRunning(false);
     setPlayers((prev) => prev.map((p) => ({ ...p, time: 0 })));
@@ -137,21 +128,16 @@ export default function Home() {
     setGlobalTime(0);
   };
 
-  // ----------------------
-  //  Manejo de Nombres
-  // ----------------------
   const handleNameChange = (id: number, newName: string) => {
     setPlayers((prev) =>
       prev.map((pl) => (pl.id === id ? { ...pl, name: newName } : pl))
     );
   };
+
   const handleNameBlur = () => {
     setEditingPlayer(null);
   };
 
-  // ----------------------
-  //  Manejo de Colores
-  // ----------------------
   const handleColorChange = (playerId: number, newColor: string) => {
     setPlayers((prev) =>
       prev.map((pl) => (pl.id === playerId ? { ...pl, color: newColor } : pl))
@@ -159,9 +145,6 @@ export default function Home() {
     setEditingColor(null);
   };
 
-  // ----------------------
-  //  Manejo de Players
-  // ----------------------
   const addNewPlayer = () => {
     const newId = Math.max(...players.map((p) => p.id)) + 1;
     const newColor = COLORS[players.length % COLORS.length];
@@ -182,41 +165,28 @@ export default function Home() {
     setShowDeleteConfirm(false);
   };
 
-  // ----------------------
-  //  Player Performance
-  // ----------------------
-  // stable sort asc
   const sortedAsc = [...players].sort((a, b) => a.time - b.time);
-
-  // stable sort desc
   const sortedDesc = [...players].sort((a, b) => b.time - a.time);
 
-  // Assign players based on sort order
   let topPlayer, secondPlayer, slowestPlayer;
   if (sortOrder === "asc") {
-    slowestPlayer = sortedAsc[sortedAsc.length - 1]; // Más lento (Highest time)
-    topPlayer = sortedAsc[0]; // Más rápido (Lowest time)
-
-    // Runner Up: Segundo más lento
+    slowestPlayer = sortedAsc[sortedAsc.length - 1];
+    topPlayer = sortedAsc[0];
     secondPlayer = sortedAsc[sortedAsc.length - 2];
-  } else if (sortOrder === "desc") {
-    // Fastest is the player with the most time
+  } else {
     topPlayer = sortedDesc[0];
-    // Runner Up is the next player with the most time
     secondPlayer = sortedDesc[1];
-    // Needs Practice is the player with the least time
     slowestPlayer = sortedDesc[sortedDesc.length - 1];
   }
 
-  // color del actual
   const currentPlayerColor = players[currentPlayer]?.color ?? "bg-gray-700";
 
-  // ----------------------
-  //       Render
-  // ----------------------
+  const togglePlayerPerformance = () => {
+    setIsPlayerPerformanceOpen(!isPlayerPerformanceOpen);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-8 relative overflow-visible">
-      {/* Fondo de círculos */}
       <div className="absolute inset-0 overflow-hidden">
         {players.map((pl, i) => (
           <div
@@ -237,15 +207,11 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Contenido principal */}
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">Player Timer</h1>
-          <div className="text-gray-300 mb-2">
-            <span className="text-base">Global Time: </span>
-            <span className="font-mono text-xl">{formatTime(globalTime)}</span>
-          </div>
-          <div className="text-gray-400 text-sm flex items-center justify-center space-x-2  mb-4">
+
+          <div className="text-gray-400 text-sm flex items-center justify-center space-x-2 mb-4">
             <span>by</span>
             <a
               href="https://github.com/JoaquimColacilli"
@@ -260,118 +226,122 @@ export default function Home() {
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.173c-3.338.725-4.042-1.415-4.042-1.415-.546-1.386-1.333-1.755-1.333-1.755-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.997.108-.775.418-1.305.76-1.605-2.665-.303-5.466-1.335-5.466-5.93 0-1.31.468-2.38 1.236-3.22-.124-.303-.536-1.524.116-3.176 0 0 1.008-.323 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.29-1.553 3.297-1.23 3.297-1.23.654 1.653.242 2.874.118 3.176.77.84 1.234 1.91 1.234 3.22 0 4.61-2.805 5.625-5.475 5.92.43.37.823 1.096.823 2.21v3.285c0 .32.217.694.824.576C20.565 21.795 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.173c-3.338.725-4.042-1.415-4.042-1.415-.546-1.386-1.333-1.755-1.333-1.755-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.997.108-.775.418-1.305.76-1.605-2.665-.303-5.466-1.335-5.466-5.93 0-1.31.468-2.38 1.236-3.22-.124-.303-.536-1.524.116-3.176 0 0 1.008-.323 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.29-1.553 3.297-1.23 3.297-1.23.43.37.823 1.096.823 2.21v3.285c0 .32.217.694.824.576C20.565 21.795 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
               </svg>
             </a>
           </div>
-          <div className="flex justify-center gap-2 sm:gap-4 mb-8">
-            <button
-              onClick={previousPlayer}
-              className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-              aria-label="Previous Player"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <button
-              onClick={toggleTimer}
-              className="p-4 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors"
-              aria-label={isRunning ? "Pause" : "Play"}
-            >
-              {isRunning ? <Pause size={24} /> : <Play size={24} />}
-            </button>
-            <button
-              onClick={nextPlayer}
-              className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-              aria-label="Next Player"
-            >
-              <ChevronRight size={24} />
-            </button>
-            <button
-              onClick={handleResetConfirmation}
-              className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-              aria-label="Reset Timers"
-            >
-              <RotateCcw size={24} />
-            </button>
-          </div>
         </div>
 
-        {/* Hint */}
         {showEditHint && (
           <div className="text-center mb-4 text-gray-400 animate-pulse">
             <p>💡 Tip: Click on player names to edit them</p>
           </div>
         )}
 
-        {/* Player Performance */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={togglePlayerPerformance}
+            className="flex items-center justify-between w-full p-4 bg-gray-800 rounded-lg mb-4"
+          >
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Trophy size={24} className="text-yellow-400" />
               Player Performance
             </h2>
             <button
-              onClick={() =>
-                setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
-              }
+              aria-label="Toggle Player Performance"
               className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-              aria-label="Toggle Sort Order"
             >
-              {sortOrder === "asc" ? (
-                <ArrowUp size={24} />
+              {isPlayerPerformanceOpen ? (
+                <ChevronUp size={20} />
               ) : (
-                <ArrowDown size={24} />
+                <ChevronDown size={20} />
               )}
             </button>
-          </div>
+          </button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              {
-                position: sortOrder === "asc" ? "Fastest" : "Fastest (Highest)",
-                player: topPlayer,
-                icon: <Trophy size={36} className="text-yellow-400" />,
-                gradient: "from-yellow-500/20 to-transparent",
-              },
-              {
-                position: "Runner Up",
-                player: secondPlayer,
-                icon: <Medal size={36} className="text-gray-200" />,
-                gradient: "from-gray-500/20 to-transparent",
-              },
-              {
-                position:
-                  sortOrder === "asc"
-                    ? "Needs Practice"
-                    : "Needs Practice (Lowest)",
-                player: slowestPlayer,
-                icon: <Timer size={36} className="text-red-400" />,
-                gradient: "from-red-500/20 to-transparent",
-              },
-            ].map((item) => (
-              <div
-                key={item.position}
-                className={cn(
-                  "relative rounded-xl p-6 backdrop-blur-sm bg-gradient-to-b",
-                  item.gradient,
-                  "border border-white/10 group hover:border-white/20 transition-all"
-                )}
-              >
-                <div className="absolute top-0 right-0 p-4">{item.icon}</div>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-400">{item.position}</p>
-                  <h3 className="text-xl font-bold truncate">
-                    {item.player?.name || "—"}
-                  </h3>
-                  <p className="font-mono text-2xl">
-                    {item.player ? formatTime(item.player.time) : "--:--:---"}
-                  </p>
+          {isPlayerPerformanceOpen && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                {
+                  position:
+                    sortOrder === "asc" ? "Fastest" : "Fastest (Highest)",
+                  player: topPlayer,
+                  icon: <Trophy size={36} className="text-yellow-400" />,
+                  gradient: "from-yellow-500/20 to-transparent",
+                },
+                {
+                  position: "Runner Up",
+                  player: secondPlayer,
+                  icon: <Medal size={36} className="text-gray-200" />,
+                  gradient: "from-gray-500/20 to-transparent",
+                },
+                {
+                  position:
+                    sortOrder === "asc"
+                      ? "Needs Practice"
+                      : "Needs Practice (Lowest)",
+                  player: slowestPlayer,
+                  icon: <Timer size={36} className="text-red-400" />,
+                  gradient: "from-red-500/20 to-transparent",
+                },
+              ].map((item) => (
+                <div
+                  key={item.position}
+                  className={cn(
+                    "relative rounded-xl p-6 backdrop-blur-sm bg-gradient-to-b",
+                    item.gradient,
+                    "border border-white/10 group hover:border-white/20 transition-all"
+                  )}
+                >
+                  <div className="absolute top-0 right-0 p-4">{item.icon}</div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-400">{item.position}</p>
+                    <h3 className="text-xl font-bold truncate">
+                      {item.player?.name || "—"}
+                    </h3>
+                    <p className="font-mono text-2xl">
+                      {item.player ? formatTime(item.player.time) : "--:--:---"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-        {/* Lista de jugadores */}
+        <div className="text-gray-300 mb-2 text-center justify-center">
+          <span className="text-base">Global Time: </span>
+          <span className="font-mono text-xl">{formatTime(globalTime)}</span>
+        </div>
+        <div className="flex justify-center gap-2 sm:gap-4 mb-8">
+          <button
+            onClick={previousPlayer}
+            className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+            aria-label="Previous Player"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={toggleTimer}
+            className="p-4 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors"
+            aria-label={isRunning ? "Pause" : "Play"}
+          >
+            {isRunning ? <Pause size={24} /> : <Play size={24} />}
+          </button>
+          <button
+            onClick={nextPlayer}
+            className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+            aria-label="Next Player"
+          >
+            <ChevronRight size={24} />
+          </button>
+          <button
+            onClick={handleResetConfirmation}
+            className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+            aria-label="Reset Timers"
+          >
+            <RotateCcw size={24} />
+          </button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {players.map((pl, i) => (
             <div
@@ -384,7 +354,6 @@ export default function Home() {
               )}
               onClick={() => setCurrentPlayer(i)}
             >
-              {/* Nombre editable + botones color y borrar */}
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 flex items-center gap-2">
                   {editingPlayer === pl.id ? (
@@ -415,7 +384,6 @@ export default function Home() {
                     </h2>
                   )}
                 </div>
-
                 <div className="flex gap-2 items-center">
                   <button
                     onClick={(e) => {
@@ -427,7 +395,6 @@ export default function Home() {
                   >
                     <Palette size={20} />
                   </button>
-
                   {players.length > 2 && (
                     <button
                       onClick={(e) => {
@@ -443,13 +410,11 @@ export default function Home() {
                   )}
                 </div>
               </div>
-
               <div className="text-2xl sm:text-3xl font-mono text-center mt-4">
                 {formatTime(pl.time)}
               </div>
             </div>
           ))}
-
           <button
             onClick={addNewPlayer}
             className="p-4 sm:p-6 rounded-xl border-2 border-dashed border-gray-600 flex items-center justify-center hover:border-gray-400 transition-colors cursor-pointer h-[100px] sm:h-[120px]"
@@ -459,8 +424,6 @@ export default function Home() {
           </button>
         </div>
       </div>
-
-      {/* MODALES */}
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-80">
@@ -494,7 +457,6 @@ export default function Home() {
                 Cancel
               </button>
             </div>
-
             <button
               onClick={() => setShowDeleteConfirm(false)}
               className="absolute top-2 right-2 text-white hover:text-red-400"
@@ -529,7 +491,6 @@ export default function Home() {
                 Cancel
               </button>
             </div>
-
             <button
               onClick={() => setShowResetConfirm(false)}
               className="absolute top-2 right-2 text-white hover:text-red-400"
