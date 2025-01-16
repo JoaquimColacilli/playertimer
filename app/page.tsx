@@ -48,26 +48,21 @@ export default function Home() {
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
-  // IDs for editing
   const [editingPlayer, setEditingPlayer] = useState<number | null>(null);
   const [editingColor, setEditingColor] = useState<number | null>(null);
 
-  // UI hints/alerts
   const [showEditHint, setShowEditHint] = useState(true);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [playerToDeleteId, setPlayerToDeleteId] = useState<number | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Sort order for performance
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // Global time
   const [globalTime, setGlobalTime] = useState(0);
 
-  // Player Performance accordion
   const [isPlayerPerformanceOpen, setIsPlayerPerformanceOpen] = useState(false);
 
-  // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning) {
@@ -83,14 +78,12 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isRunning, currentPlayer]);
 
-  // Hide hint if user actually edits
   useEffect(() => {
     if (editingPlayer !== null) {
       setShowEditHint(false);
     }
   }, [editingPlayer]);
 
-  // Format the time as mm:ss:xxx
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
@@ -133,7 +126,6 @@ export default function Home() {
     setGlobalTime(0);
   };
 
-  // Name editing
   const handleNameChange = (id: number, newName: string) => {
     setPlayers((prev) =>
       prev.map((pl) => (pl.id === id ? { ...pl, name: newName } : pl))
@@ -144,7 +136,6 @@ export default function Home() {
     setEditingPlayer(null);
   };
 
-  // Color editing
   const handleColorChange = (playerId: number, newColor: string) => {
     setPlayers((prev) =>
       prev.map((pl) => (pl.id === playerId ? { ...pl, color: newColor } : pl))
@@ -152,7 +143,6 @@ export default function Home() {
     setEditingColor(null);
   };
 
-  // Add / Delete players
   const addNewPlayer = () => {
     const newId = Math.max(...players.map((p) => p.id)) + 1;
     const newColor = COLORS[players.length % COLORS.length];
@@ -166,8 +156,6 @@ export default function Home() {
     if (players.length <= 2) return;
     const updated = players.filter((pl) => pl.id !== id);
     setPlayers(updated);
-
-    // Ensure current player index stays valid
     if (currentPlayer >= updated.length) {
       setCurrentPlayer(updated.length - 1);
     }
@@ -175,13 +163,10 @@ export default function Home() {
     setShowDeleteConfirm(false);
   };
 
-  // Sorting logic for "top player", "second", etc.
   const sortedAsc = [...players].sort((a, b) => a.time - b.time);
   const sortedDesc = [...players].sort((a, b) => b.time - a.time);
 
-  let topPlayer,
-    secondPlayer,
-    slowestPlayer: Player | undefined = undefined;
+  let topPlayer, secondPlayer, slowestPlayer;
   if (sortOrder === "asc") {
     slowestPlayer = sortedAsc[sortedAsc.length - 1];
     topPlayer = sortedAsc[0];
@@ -192,14 +177,12 @@ export default function Home() {
     slowestPlayer = sortedDesc[sortedDesc.length - 1];
   }
 
-  // Toggle performance section
   const togglePlayerPerformance = () => {
     setIsPlayerPerformanceOpen(!isPlayerPerformanceOpen);
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-8 relative overflow-visible">
-      {/* Background color blobs */}
       <div className="absolute inset-0 overflow-hidden">
         {players.map((pl, i) => (
           <div
@@ -247,15 +230,13 @@ export default function Home() {
 
         {showEditHint && (
           <div className="text-center mb-4 text-gray-400 animate-pulse">
-            {/* Tip about editing only when paused */}
             <p>
-              💡 Tip: Click on player names to edit them (only when the timer is
-              paused)
+              💡 Note: You can only edit player names, change colors, or delete
+              players when the timer is paused.
             </p>
           </div>
         )}
 
-        {/* Player Performance Section */}
         <div className="mb-8">
           <button
             onClick={togglePlayerPerformance}
@@ -327,13 +308,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* Global Timer */}
         <div className="text-gray-300 mb-2 text-center justify-center">
           <span className="text-base">Global Time: </span>
           <span className="font-mono text-xl">{formatTime(globalTime)}</span>
         </div>
-
-        {/* Main Controls */}
         <div className="flex justify-center gap-2 sm:gap-4 mb-8">
           <button
             onClick={previousPlayer}
@@ -364,8 +342,6 @@ export default function Home() {
             <RotateCcw size={24} />
           </button>
         </div>
-
-        {/* Players Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {players.map((pl, i) => (
             <div
@@ -376,12 +352,10 @@ export default function Home() {
                 pl.color,
                 i === currentPlayer ? "ring-4 ring-white" : "opacity-80"
               )}
-              // When user clicks the card, we switch current player
               onClick={() => setCurrentPlayer(i)}
             >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
-                  {/* Name editing */}
                   {editingPlayer === pl.id ? (
                     <input
                       type="text"
@@ -395,25 +369,21 @@ export default function Home() {
                       autoFocus
                     />
                   ) : (
-                    // The trick: we either allow edit if paused, or do nothing if running.
-                    // We also use stopPropagation if paused so we don't trigger the parent's click (change currentPlayer).
                     <h2
                       className={cn(
                         "text-xl font-bold flex items-center gap-2",
-                        isRunning
-                          ? "cursor-pointer" // while running, normal pointer so user can switch player by clicking anywhere
-                          : "cursor-text"
+                        isRunning ? "cursor-pointer" : "cursor-text"
                       )}
                       onClick={(e) => {
+                        // Solo habilitamos edición si el timer está pausado
                         if (!isRunning) {
-                          // If paused, allow edit
-                          e.stopPropagation(); // Avoid changing the player on parent
+                          e.stopPropagation();
                           setEditingPlayer(pl.id);
                         }
-                        // If running, do nothing special here, so the parent's onClick is triggered
                       }}
                     >
                       {pl.name}
+                      {/* Ícono de editar sólo si estamos pausados (para evitar confusiones) */}
                       {!isRunning && (
                         <Edit2
                           size={16}
@@ -423,16 +393,13 @@ export default function Home() {
                     </h2>
                   )}
                 </div>
-
-                {/* Color + Delete buttons */}
                 <div className="flex gap-2 items-center">
                   <button
                     onClick={(e) => {
                       if (!isRunning) {
-                        e.stopPropagation(); // avoid selecting the player
+                        e.stopPropagation();
                         setEditingColor(editingColor === pl.id ? null : pl.id);
                       }
-                      // If running, no color edit => parent's onClick will run
                     }}
                     className="p-1 hover:bg-white/20 rounded-full transition-colors"
                     aria-label="Change Color"
@@ -443,11 +410,17 @@ export default function Home() {
                   {players.length > 2 && (
                     <button
                       onClick={(e) => {
-                        e.stopPropagation(); // We don't want to switch player
-                        setPlayerToDeleteId(pl.id);
-                        setShowDeleteConfirm(true);
+                        // Solo permitimos borrar si el timer está pausado
+                        if (!isRunning) {
+                          e.stopPropagation();
+                          setPlayerToDeleteId(pl.id);
+                          setShowDeleteConfirm(true);
+                        }
                       }}
-                      className="p-1 rounded-full bg-white text-black hover:bg-gray-300 transition-colors"
+                      className={cn(
+                        "p-1 rounded-full bg-white text-black hover:bg-gray-300 transition-colors",
+                        isRunning ? "cursor-pointer" : ""
+                      )}
                       aria-label="Delete Player"
                     >
                       <X size={16} />
@@ -455,14 +428,11 @@ export default function Home() {
                   )}
                 </div>
               </div>
-
-              {/* Time Display */}
               <div className="text-2xl sm:text-3xl font-mono text-center mt-4">
                 {formatTime(pl.time)}
               </div>
             </div>
           ))}
-          {/* Add Player Card */}
           <button
             onClick={addNewPlayer}
             className="p-4 sm:p-6 rounded-xl border-2 border-dashed border-gray-600 flex items-center justify-center hover:border-gray-400 transition-colors cursor-pointer h-[100px] sm:h-[120px]"
@@ -473,7 +443,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Confirm Delete Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-80">
           <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full shadow-xl relative">
@@ -517,7 +486,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Confirm Reset Modal */}
       {showResetConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-80">
           <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full shadow-xl relative">
@@ -552,7 +520,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Color Selection Modal */}
       {editingColor !== null && (
         <div
           className="fixed inset-0 flex items-center justify-center z-[100] bg-gray-900/80 backdrop-blur-sm"
